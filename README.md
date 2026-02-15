@@ -1,97 +1,59 @@
-<<<<<<< HEAD
 # Database Architect Agent
 
-An AI-powered database schema generation tool that converts natural language descriptions into complete database schemas with interactive visualization.
+An advanced, AI-powered system that generates comprehensive database schemas from natural language descriptions. Designed with a professional enterprise aesthetic, this agent delivers production-ready SQL and Mermaid entity-relationship diagrams instantly.
 
-![Database Architect Agent](https://via.placeholder.com/800x400/0f172a/0ea5e9?text=Database+Architect+Agent)
+## 🚀 Features
 
-## Features
+- **🤖 Intelligent Schema Generation**: Powered by OpenAI's GPT-4 Turbo (or advanced mock logic), acting as a Senior Database Architect.
+- **🎨 Enterprise UI**: A clean, modern interface featuring a specific "Blue/Slate" professional theme.
+- **🔄 Dual-Dialect Support**: Generate optimized SQL for **PostgreSQL**, **MySQL**, **SQLite**, and **SQL Server**.
+- **📊 Interactive Visualization**: Automatically compiles generic schemas into **Mermaid.js** ER diagrams for instant clarity.
+- **⚡ Real-time Compilation**: See the generated SQL code side-by-side with the visual diagram.
+- **🔒 Secure & Exportable**: Download your schema as a `.sql` file or copy it directly to your clipboard.
 
-- 🤖 **AI-Powered Generation**: Describe your application in natural language and get a complete database schema
-- 🔄 **Dialect Support**: Generate schemas for MySQL or PostgreSQL with proper syntax
-- 📊 **Interactive ER Diagrams**: Visualize your schema with Mermaid.js diagrams
-- 🌳 **Tree View Editor**: Browse and modify tables, columns, and relationships
-- ✏️ **Live Editing**: Change relationship cardinality (1:1, 1:N, N:M) and see instant SQL updates
-- 📋 **Export Options**: Copy SQL, download .sql files, export Mermaid diagrams, or JSON schemas
-- 🎨 **Modern UI**: Beautiful dark theme with glassmorphism effects
+## 🏗 Architecture
 
-## Architecture
+The application is built on a robust modern stack:
 
-The application uses an **Intermediate Representation (IR)** architecture:
+- **Frontend**: React + TypeScript + Vite + Tailwind CSS (v4) + Zustand + Mermaid.js
+- **Backend**: Python FastAPI + Pydantic + OpenAI SDK + Python-Dotenv
 
-1. **AI Processing**: User prompt → LLM → Structured JSON Schema
-2. **Compilation Engine**: JSON Schema → SQL DDL + Mermaid Diagram
-3. **Interactive Editing**: UI changes → JSON updates → Instant recompilation
+### Workflow
 
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   User Prompt   │────▶│   AI (Backend)   │────▶│   JSON Schema   │
-└─────────────────┘     └──────────────────┘     └────────┬────────┘
-                                                          │
-                        ┌─────────────────────────────────┴──────────────────────────────────┐
-                        │                                                                     │
-                        ▼                                                                     ▼
-              ┌──────────────────┐                                              ┌──────────────────┐
-              │   SQL Compiler   │                                              │ Mermaid Compiler │
-              └────────┬─────────┘                                              └────────┬─────────┘
-                       │                                                                  │
-                       ▼                                                                  ▼
-              ┌──────────────────┐                                              ┌──────────────────┐
-              │    SQL DDL       │                                              │   ER Diagram     │
-              └──────────────────┘                                              └──────────────────┘
-```
+1.  **User Input**: You describe your data requirements (e.g., "A multi-vendor e-commerce platform").
+2.  **AI Orchestration**: The backend constructs a "Senior Architect" system prompt and queries the LLM.
+3.  **Structured IR**: The AI returns a strict JSON Intermediate Representation (IR) of the schema.
+4.  **Compilation**: The frontend compiles this IR into both SQL DDL statements and Mermaid diagram syntax.
+5.  **Visualization**: The UI renders the diagram and SQL editor for user review.
 
-## Tech Stack
-
-### Frontend
-
-- **React** + **TypeScript** (Vite)
-- **Tailwind CSS** for styling
-- **Zustand** for state management
-- **Mermaid.js** for ER diagrams
-- **Prism.js** for SQL syntax highlighting
-- **Lucide Icons**
-
-### Backend
-
-- **FastAPI** (Python)
-- **OpenAI** / **Anthropic** for AI generation
-- **Pydantic** for data validation
-
-## Getting Started
-
-### Prerequisites
+## 🛠 Prerequisites
 
 - Node.js 18+
 - Python 3.10+
-- OpenAI or Anthropic API key
+- OpenAI API Key (optional, defaults to advanced mock generator if missing)
 
-### Backend Setup
+## 🏁 Getting Started
+
+### 1. Backend Setup
 
 ```bash
 cd backend
 
-# Create virtual environment
-python -m venv venv
-
-# Activate venv (Windows)
-.\venv\Scripts\activate
-
-# Activate venv (Linux/Mac)
-source venv/bin/activate
-
 # Install dependencies
 pip install -r requirements.txt
 
-# Copy environment file and add your API key
-copy .env.example .env
-# Edit .env and add your OPENAI_API_KEY or ANTHROPIC_API_KEY
+# Configure Environment
+# Create a .env file and add your API key:
+# OPENAI_API_KEY=sk-proj-...
+# (If skipped, the system uses a Mock Generator for demo purposes)
 
 # Run the server
-python -m uvicorn app.main:app --reload
+python main.py
 ```
 
-### Frontend Setup
+_The API runs at `http://localhost:8000`_
+
+### 2. Frontend Setup
 
 ```bash
 cd frontend
@@ -99,56 +61,22 @@ cd frontend
 # Install dependencies
 npm install
 
-# Run development server
+# Run the development server
 npm run dev
 ```
 
-### Access the Application
+_The application runs at `http://localhost:5173`_
 
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+## 💡 Usage
 
-## Usage
+1.  Open `http://localhost:5173`.
+2.  In the prompt box, enter a description like:
+    > "Design a database for a blog with users, posts, comments, and tags."
+3.  Select your target SQL Dialect (e.g., PostgreSQL).
+4.  Click **Generate**.
+5.  Review the **SQL Code** and **Schema Diagram** in the results pane.
+6.  Click **Download SQL File** to save your schema.
 
-1. **Describe your application** in the text area (e.g., "A multi-vendor e-commerce platform with inventory management")
-2. **Select your SQL dialect** (MySQL or PostgreSQL)
-3. **Click "Generate Schema"** to create your database schema
-4. **View the ER diagram** or **browse the tree view** to explore tables and relationships
-5. **Edit relationships** by clicking on them and changing cardinality
-6. **Export** your schema as SQL, Mermaid, or JSON
-
-## API Endpoints
-
-| Method | Endpoint               | Description                 |
-| ------ | ---------------------- | --------------------------- |
-| GET    | `/api/health`          | Health check                |
-| POST   | `/api/generate-schema` | Generate schema from prompt |
-| POST   | `/api/refine-schema`   | Refine existing schema      |
-
-## Schema JSON Structure
-
-```typescript
-interface SchemaDefinition {
-  id: string;
-  name: string;
-  description: string;
-  dialect: "mysql" | "postgresql";
-  tables: TableDefinition[];
-  relationships: RelationshipDefinition[];
-  storedProcedures: StoredProcedureDefinition[];
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-## License
+## 📄 License
 
 MIT License
-
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request.
-=======
-# Database_Architecture_Designer_Agent
->>>>>>> 1a37a0800ae1c215b0a385cfb87ac1a4ce7af80c
