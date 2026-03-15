@@ -3,7 +3,7 @@ import { useSchemaStore, useError } from '../../store/schemaStore';
 
 export const ErrorBanner = () => {
   const error = useError();
-  const { setError } = useSchemaStore();
+  const setError = useSchemaStore((state) => state.setError);
 
   if (!error) return null;
 

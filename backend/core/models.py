@@ -1,6 +1,5 @@
 from typing import List, Optional, Union, Literal
 from pydantic import BaseModel, Field
-from datetime import datetime
 
 # Types matching frontend
 SQLDialect = Literal["mysql", "postgresql", "sqlite", "sqlserver"]

@@ -461,12 +461,14 @@ export const useSchemaStore = create<SchemaStore>()(
   )
 );
 
+const EMPTY_ARRAY: any[] = [];
+
 // Selector hooks for optimized re-renders
 export const useSchema = () => useSchemaStore((state) => state.schema);
 export const useCompiledSQL = () => useSchemaStore((state) => state.compiledSQL);
 export const useCompiledMermaid = () => useSchemaStore((state) => state.compiledMermaid);
-export const useTables = () => useSchemaStore((state) => state.schema?.tables ?? []);
-export const useRelationships = () => useSchemaStore((state) => state.schema?.relationships ?? []);
+export const useTables = () => useSchemaStore((state) => state.schema?.tables ?? EMPTY_ARRAY);
+export const useRelationships = () => useSchemaStore((state) => state.schema?.relationships ?? EMPTY_ARRAY);
 export const useIsLoading = () => useSchemaStore((state) => state.isLoading);
 export const useIsGenerating = () => useSchemaStore((state) => state.isGenerating);
 export const useError = () => useSchemaStore((state) => state.error);

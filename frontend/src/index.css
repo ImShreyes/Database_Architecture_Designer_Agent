@@ -14,20 +14,20 @@
   --color-primary-900: #1e3a8a;
   --color-primary-950: #172554;
 
-  /* Slate Gray Palette (Surface) */
+  /* Dark UI Palette (Surface) replacing Slate */
   --color-surface-50: #f8fafc;
   --color-surface-100: #f1f5f9;
-  --color-surface-200: #e2e8f0;
-  --color-surface-300: #cbd5e1;
-  --color-surface-400: #94a3b8;
+  --color-surface-200: #2d3139;
+  --color-surface-300: #3b404a;
+  --color-surface-400: #4a505c;
   --color-surface-500: #64748b;
   --color-surface-600: #475569;
-  --color-surface-700: #334155;
-  --color-surface-800: #1e293b;
-  --color-surface-900: #0f172a;
-  --color-surface-950: #020617;
+  --color-surface-700: #1a1d24; /* Sidebar/Cards */
+  --color-surface-800: #12141a; /* Background / Main view */
+  --color-surface-900: #0d0f14; /* Deep dark panels */
+  --color-surface-950: #06080a;
 
-  /* Minimal Accent Palette (Purple) */
+  /* Accent Palette (Blue/Purple) */
   --color-accent-50: #faf5ff;
   --color-accent-100: #f3e8ff;
   --color-accent-200: #e9d5ff;
@@ -43,8 +43,8 @@
   --font-sans: Inter, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
+  --shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.6), 0 4px 6px -4px rgb(0 0 0 / 0.6);
   
   --animate-fade-in: fadeIn 0.3s ease-in-out;
   
@@ -57,8 +57,8 @@
 @layer base {
   body {
     /* Using standard tailwind classes or theme variables directly */
-    @apply font-sans antialiased text-slate-800;
-    background-color: var(--color-surface-50);
+    @apply font-sans antialiased text-slate-300;
+    background-color: var(--color-surface-800);
     min-height: 100vh;
   }
 }
@@ -69,31 +69,31 @@
     background-color: var(--color-primary-600);
   }
   .btn-primary:hover {
-    background-color: var(--color-primary-700);
+    background-color: var(--color-primary-500);
   }
   .btn-primary:active {
-    background-color: var(--color-primary-800);
+    background-color: var(--color-primary-700);
   }
   
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 active:bg-slate-100 transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-slate-300 bg-surface-700 border border-surface-600 hover:bg-surface-600 active:bg-surface-500 transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors duration-200;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white hover:bg-surface-700 transition-colors duration-200;
   }
 
   .card {
-    @apply bg-white rounded-lg border border-slate-200 shadow-card;
+    @apply bg-surface-700 rounded-xl border border-surface-600 shadow-card;
   }
 
   .input {
-    @apply w-full px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200;
+    @apply w-full px-4 py-3 bg-surface-900 border border-surface-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-200;
   }
 
   /* Inline the card styles to avoid @apply issues with custom classes */
   .glass-card {
-    @apply bg-white rounded-lg border border-slate-200 shadow-card;
+    @apply bg-surface-700/80 backdrop-blur-md rounded-xl border border-surface-600 shadow-card;
   }
 
   .badge {
@@ -101,7 +101,7 @@
   }
 
   .badge-primary {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-900/50 text-primary-400 border border-primary-500/30;
   }
 }
 

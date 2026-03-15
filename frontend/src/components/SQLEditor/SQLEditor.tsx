@@ -40,31 +40,27 @@ export const SQLEditor = () => {
 
   if (!schema) {
       return (
-          <div className="card h-[600px] flex items-center justify-center text-slate-400">
+          <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-4">
               <p>Generated SQL will appear here</p>
           </div>
       )
   }
 
   return (
-    <div className="card h-[600px] flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-        <h3 className="font-bold text-slate-800">
-          Generated SQL Schema
-        </h3>
-        
+    <div className="w-full h-full flex flex-col overflow-hidden bg-[#1e293b] rounded-xl border border-[#2d3139]">
+      {/* Header controls only */}
+      <div className="px-4 py-3 border-b border-[#2d3139] flex items-center justify-end bg-[#12141a]">
         <div className="flex items-center gap-2">
             <button
                 onClick={handleDownload}
-                className="btn-primary text-sm px-4 py-1.5 h-auto rounded flex items-center gap-2"
+                className="btn-primary text-xs px-3 py-1.5 h-auto rounded flex items-center gap-2"
             >
                 <Download className="w-3.5 h-3.5" />
-                Download SQL File
+                Download SQL
             </button>
             <button
             onClick={handleCopy}
-            className="btn-secondary text-sm px-4 py-1.5 h-auto rounded flex items-center gap-2"
+            className="btn-secondary text-xs px-3 py-1.5 h-auto rounded flex items-center gap-2"
             >
             {copied ? (
                 <>
@@ -74,7 +70,7 @@ export const SQLEditor = () => {
             ) : (
                 <>
                 <Copy className="w-3.5 h-3.5" />
-                Copy to Clipboard
+                Copy
                 </>
             )}
             </button>
@@ -82,10 +78,10 @@ export const SQLEditor = () => {
       </div>
 
       {/* Code Content */}
-      <div className="flex-1 overflow-auto bg-[#1e293b]"> {/* Dark background for code */}
-        <div className="relative">
+      <div className="flex-1 overflow-auto bg-[#0f1117]">
+        <div className="relative h-full">
           {/* Line Numbers */}
-          <div className="absolute left-0 top-0 bottom-0 w-12 bg-[#0f172a] border-r border-slate-700">
+          <div className="absolute left-0 top-0 bottom-0 w-12 bg-[#12141a] border-r border-[#2d3139]">
             <div className="p-4 font-mono text-sm text-slate-500 text-right select-none">
               {compiledSQL.split('\n').map((_, i) => (
                 <div key={i} className="leading-6">

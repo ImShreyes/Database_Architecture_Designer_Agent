@@ -3,9 +3,6 @@ import type {
   SchemaDefinition,
   TableDefinition,
   ColumnDefinition,
-  IndexDefinition,
-  ForeignKeyDefinition,
-  RelationshipDefinition,
   StoredProcedureDefinition,
   SQLDialect,
   ColumnType,
@@ -207,7 +204,7 @@ export class SQLCompiler {
     parts.push(`  ${this.quote(column.name)}`);
 
     // Data type
-    let dataType = this.getColumnType(column, table);
+    const dataType = this.getColumnType(column, table);
     parts.push(dataType);
 
     // NOT NULL

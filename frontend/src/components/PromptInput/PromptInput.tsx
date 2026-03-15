@@ -1,21 +1,16 @@
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import type { SQLDialect } from '../../engine/types';
+import { Loader2, Sparkles, Paperclip, History, Zap } from 'lucide-react';
 import { useSchemaStore } from '../../store/schemaStore';
 import { api } from '../../services/api';
 
 export const PromptInput = () => {
-  const { 
-    userPrompt, 
-    setUserPrompt, 
-    setSchema, 
-    isGenerating, 
-    setGenerating, 
-    setError,
-    schema
-  } = useSchemaStore();
+  const userPrompt = useSchemaStore((state) => state.userPrompt);
+  const setUserPrompt = useSchemaStore((state) => state.setUserPrompt);
+  const setSchema = useSchemaStore((state) => state.setSchema);
+  const isGenerating = useSchemaStore((state) => state.isGenerating);
+  const setGenerating = useSchemaStore((state) => state.setGenerating);
+  const setError = useSchemaStore((state) => state.setError);
   
-  const [dialect, setDialect] = useState<SQLDialect>('postgresql');
+  const dialect = 'postgresql';
 
   const handleGenerate = async () => {
     if (!userPrompt.trim()) {
@@ -36,65 +31,51 @@ export const PromptInput = () => {
     }
   };
 
-  const handleDialectChange = (newDialect: SQLDialect) => {
-    setDialect(newDialect);
-    if (schema) {
-      useSchemaStore.getState().setDialect(newDialect);
-    }
-  };
-
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 animate-fade-in">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-slate-900">
-          Generate Database Architecture
+    <div className="flex flex-col">
+      <div className="flex items-center gap-2 mb-4">
+        <Sparkles className="w-5 h-5 text-blue-500" />
+        <h2 className="text-[13px] font-bold text-blue-500 tracking-widest uppercase">
+          AI PROMPT WORKSPACE
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Enter your prompt
-        </p>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
-            <input
-              type="text"
-              value={userPrompt}
-              onChange={(e) => setUserPrompt(e.target.value)}
-              placeholder="Design a database for an e-commerce store with users, products, orders, and payments."
-              className="flex-1 input"
-              disabled={isGenerating}
-            />
-            <div className="md:w-64">
-                <select
-                    value={dialect}
-                    onChange={(e) => handleDialectChange(e.target.value as SQLDialect)}
-                    className="input cursor-pointer"
-                    disabled={isGenerating}
-                >
-                    <option value="" disabled>Select DB Dialect</option>
-                    <option value="postgresql">PostgreSQL</option>
-                    <option value="mysql">MySQL</option>
-                    <option value="sqlite">SQLite</option>
-                    <option value="sqlserver">SQL Server</option>
-                </select>
-            </div>
-        </div>
+      <div className="bg-[#12141a] rounded-xl border border-blue-500/30 p-4 shadow-[0_0_15px_rgba(59,130,246,0.1)] focus-within:border-blue-500 focus-within:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all">
+        <textarea
+          value={userPrompt}
+          onChange={(e) => setUserPrompt(e.target.value)}
+          placeholder="Create a full e-commerce backend with users, orders, products, and reviews."
+          className="w-full h-32 bg-transparent text-sm text-slate-200 placeholder-slate-500 resize-none focus:outline-none"
+          disabled={isGenerating}
+        />
         
-        <div>
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating || !userPrompt.trim()}
-              className="btn-primary w-full md:w-40"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  Generating...
-                </>
-              ) : (
-                'Generate'
-              )}
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center gap-4 text-slate-500">
+            <button className="hover:text-slate-300 transition-colors hidden md:block">
+              <Paperclip className="w-4 h-4" />
             </button>
+            <button className="hover:text-slate-300 transition-colors hidden md:block">
+              <History className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating || !userPrompt.trim()}
+            className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-medium px-5 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4 fill-white" />
+                Generate
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

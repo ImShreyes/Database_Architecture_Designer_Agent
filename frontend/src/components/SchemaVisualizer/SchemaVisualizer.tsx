@@ -2,47 +2,42 @@ import { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 import { 
   Network, 
-  Table as TableIcon, 
-  ChevronRight, 
-  ChevronDown,
-  Key,
-  Link,
-  Trash2,
-  Edit2,
-  RefreshCw
+  ZoomIn,
+  ZoomOut,
+  Hand,
+  MousePointer2,
+  Grid
 } from 'lucide-react';
-import { 
-  useSchemaStore, 
-  useCompiledMermaid, 
-  useTables, 
-  useRelationships 
-} from '../../store/schemaStore';
-import type { TableDefinition, RelationshipDefinition, Cardinality } from '../../engine/types';
+import { useCompiledMermaid } from '../../store/schemaStore';
+import { SQLEditor } from '../SQLEditor';
 
-// Initialize Mermaid with Light Theme
+// Initialize Mermaid with Dark Theme
 mermaid.initialize({
   startOnLoad: false,
-  theme: 'base',
+  theme: 'dark',
   themeVariables: {
-    primaryColor: '#eff6ff',
-    primaryTextColor: '#1e293b',
-    primaryBorderColor: '#3b82f6',
-    lineColor: '#64748b',
-    secondaryColor: '#ffffff',
-    tertiaryColor: '#f8fafc',
-    background: '#ffffff',
-    mainBkg: '#ffffff',
-    nodeBorder: '#3b82f6',
-    clusterBkg: '#f1f5f9',
-    titleColor: '#1e293b',
-    edgeLabelBackground: '#ffffff',
+    primaryColor: '#1e293b',
+    primaryTextColor: '#f8fafc',
+    primaryBorderColor: '#334155',
+    lineColor: '#3b82f6',
+    secondaryColor: '#0ea5e9',
+    tertiaryColor: '#1e293b',
+    background: 'transparent',
+    mainBkg: '#1e293b',
+    nodeBorder: '#334155',
+    clusterBkg: '#0f172a',
+    titleColor: '#f8fafc',
+    edgeLabelBackground: '#1e293b',
+    fontFamily: 'Inter, system-ui, sans-serif'
   },
   er: {
     useMaxWidth: true,
+    layoutDirection: 'TB',
+    minEntityWidth: 200,
+    minEntityHeight: 100,
   },
 });
 
-// Mermaid Diagram Component
 const MermaidDiagram = ({ diagram }: { diagram: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,9 +71,9 @@ const MermaidDiagram = ({ diagram }: { diagram: string }) => {
 
   if (!diagram) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
-        <Network className="w-16 h-16 opacity-50" />
-        <p className="text-lg">No schema to visualize</p>
+      <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-4">
+        <Network className="w-16 h-16 opacity-30" />
+        <p className="text-sm">Generate a schema to view the ER diagram</p>
       </div>
     );
   }
@@ -86,139 +81,103 @@ const MermaidDiagram = ({ diagram }: { diagram: string }) => {
   return (
     <div 
       ref={containerRef}
-      className="w-full h-full overflow-auto p-4 flex items-center justify-center bg-white"
+      className="w-full h-full overflow-auto flex items-center justify-center [&>svg]:max-w-[90%] [&>svg]:h-auto"
       dangerouslySetInnerHTML={{ __html: svgContent }}
     />
   );
 };
 
-// Tree Node for Tables (Keeping functionality but updating styles)
-interface TreeNodeProps {
-  table: TableDefinition;
-  isExpanded: boolean;
-  isSelected: boolean;
-  onToggle: () => void;
-  onSelect: () => void;
-}
-
-const TableTreeNode = ({ 
-  table, 
-  isExpanded, 
-  isSelected, 
-  onToggle, 
-  onSelect 
-}: TreeNodeProps) => {
-  return (
-    <div className="animate-fade-in">
-      <div 
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-150 ${
-            isSelected ? 'bg-primary-50 text-primary-700' : 'hover:bg-slate-50'
-        }`}
-        onClick={onSelect}
-      >
-        <button 
-          onClick={(e) => { e.stopPropagation(); onToggle(); }}
-          className="p-0.5 hover:bg-slate-100 rounded transition-colors"
-        >
-          {isExpanded ? (
-            <ChevronDown className="w-4 h-4 text-slate-400" />
-          ) : (
-            <ChevronRight className="w-4 h-4 text-slate-400" />
-          )}
-        </button>
-        <TableIcon className="w-4 h-4 text-primary-500" />
-        <span className="font-medium text-slate-700">{table.name}</span>
-        <span className="text-xs text-slate-400 ml-auto">
-          {table.columns.length} cols
-        </span>
-      </div>
-
-      {isExpanded && (
-        <div className="ml-6 pl-3 border-l border-slate-200 space-y-1 py-1">
-          {table.columns.map((column) => (
-            <div 
-              key={column.id}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all"
-            >
-              {column.isPrimaryKey && (
-                <Key className="w-3.5 h-3.5 text-yellow-500" />
-              )}
-              {!column.isPrimaryKey && (
-                <div className="w-3.5 h-3.5 rounded border border-slate-300" />
-              )}
-              <span className="font-mono">{column.name}</span>
-              <span className="text-xs text-slate-400 ml-auto">
-                {column.type}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Main Schema Visualizer Component
 export const SchemaVisualizer = () => {
   const compiledMermaid = useCompiledMermaid();
-  const tables = useTables();
-  const relationships = useRelationships();
-  const { 
-    selectedTableId, 
-    selectTable, 
-  } = useSchemaStore();
-
-  const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set());
-  
-  // Tab state could be used to toggle tree view if needed, but screenshot focus is Diagram
-  const [activeTab, setActiveTab] = useState<'diagram' | 'tree'>('diagram');
-
-  const toggleExpanded = (tableId: string) => {
-    setExpandedTables((prev) => {
-      const next = new Set(prev);
-      if (next.has(tableId)) {
-        next.delete(tableId);
-      } else {
-        next.add(tableId);
-      }
-      return next;
-    });
-  };
-
-  useEffect(() => {
-    if (tables.length > 0) {
-      setExpandedTables(new Set(tables.map((t) => t.id)));
-    }
-  }, [tables]);
+  const [activeTab, setActiveTab] = useState<'diagram' | 'queries'>('diagram');
 
   return (
-    <div className="card flex flex-col h-[600px] overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-        <h3 className="font-bold text-slate-800 flex items-center gap-2">
-           Database Schema Diagram
-        </h3>
-        
-        <div className="flex items-center gap-2">
-            <button className="btn-primary text-sm px-4 py-1.5 h-auto rounded">
-                <Edit2 className="w-3.5 h-3.5 mr-1" />
-                Edit
-            </button>
-            <button className="btn-secondary text-sm px-4 py-1.5 h-auto rounded">
-                <RefreshCw className="w-3.5 h-3.5 mr-1" />
-                Refresh
-            </button>
+    <div className="flex flex-col h-full w-full relative">
+      {/* Top Navigation Bar inside Workspace */}
+      <div className="flex items-center justify-between px-6 pt-4 relative z-10 w-full">
+        <div className="flex items-center gap-6 border-b-2 border-transparent w-full">
+          <button 
+            onClick={() => setActiveTab('diagram')}
+            className={`pb-3 text-sm font-medium transition-colors ${
+              activeTab === 'diagram' 
+                ? 'text-blue-500 border-b-2 border-blue-500' 
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            ER Diagram
+          </button>
+          <button 
+            onClick={() => setActiveTab('queries')}
+            className={`pb-3 text-sm font-medium transition-colors ${
+              activeTab === 'queries' 
+                ? 'text-blue-500 border-b-2 border-blue-500' 
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            DDL Queries
+          </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden bg-white relative">
-         <MermaidDiagram diagram={compiledMermaid} />
-         
-         {/* Toggle for Tree View (Optional / Hidden in screenshot but useful) */}
-         <div className="absolute bottom-4 right-4">
-             {/* Could add zoom controls here */}
-         </div>
+      {activeTab === 'diagram' && (
+        <>
+          {/* Floating Toolbar */}
+          <div className="absolute top-20 right-[50%] translate-x-[50%] z-20 bg-[#12141a]/90 backdrop-blur border border-[#2d3139] rounded-2xl px-4 py-2 flex items-center gap-4 shadow-xl select-none">
+            <button className="text-slate-400 hover:text-white transition-colors p-1" title="Zoom In">
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <button className="text-slate-400 hover:text-white transition-colors p-1" title="Zoom Out">
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <div className="w-px h-4 bg-surface-600"></div>
+            <button className="text-slate-400 hover:text-white transition-colors p-1" title="Pan">
+              <Hand className="w-4 h-4" />
+            </button>
+            <button className="text-blue-500 p-1" title="Select">
+              <MousePointer2 className="w-4 h-4" />
+            </button>
+            <div className="w-px h-4 bg-surface-600"></div>
+            <button className="text-slate-400 hover:text-white transition-colors p-1" title="Toggle Grid">
+              <Grid className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Canvas Area with Dot Grid */}
+          <div 
+            className="flex-1 w-full relative overflow-hidden" 
+            style={{
+              backgroundImage: 'radial-gradient(#2d3139 1px, transparent 1px)',
+              backgroundSize: '24px 24px'
+            }}
+          >
+            <MermaidDiagram diagram={compiledMermaid} />
+          </div>
+        </>
+      )}
+
+      {activeTab === 'queries' && (
+        <div className="flex-1 overflow-auto p-6">
+          <SQLEditor />
+        </div>
+      )}
+
+      {/* Status Bar */}
+      <div className="h-10 border-t border-surface-700 bg-[#0f1117] flex items-center justify-between px-4 text-xs text-slate-400 select-none relative z-10 w-full">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+            <span>AI Engine: High-Performance v2.0</span>
+          </div>
+          <span>Schema synchronized just now</span>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <span>Tables: 6 | Relations: 5 | Constraints: 12</span>
+          <button className="flex items-center gap-2 hover:text-slate-200 transition-colors">
+            <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full border border-current">👁</span>
+            Preview SQL
+          </button>
+        </div>
       </div>
     </div>
   );
