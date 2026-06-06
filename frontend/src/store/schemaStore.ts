@@ -7,6 +7,9 @@ import type {
   ColumnDefinition,
   RelationshipDefinition,
   StoredProcedureDefinition,
+  FunctionDefinition,
+  ViewDefinition,
+  TriggerDefinition,
   IndexDefinition,
   ForeignKeyDefinition,
   SQLDialect,
@@ -27,6 +30,7 @@ interface SchemaStore {
   selectedTableId: string | null;
   selectedRelationshipId: string | null;
   userPrompt: string;
+  selectedDialect: SQLDialect;
 
   // Schema Actions
   setSchema: (schema: SchemaDefinition) => void;
@@ -65,11 +69,27 @@ interface SchemaStore {
   updateStoredProcedure: (procId: string, updates: Partial<StoredProcedureDefinition>) => void;
   deleteStoredProcedure: (procId: string) => void;
 
+  // Function Actions
+  addFunction: (fn: FunctionDefinition) => void;
+  updateFunction: (fnId: string, updates: Partial<FunctionDefinition>) => void;
+  deleteFunction: (fnId: string) => void;
+
+  // View Actions
+  addView: (view: ViewDefinition) => void;
+  updateView: (viewId: string, updates: Partial<ViewDefinition>) => void;
+  deleteView: (viewId: string) => void;
+
+  // Trigger Actions
+  addTrigger: (trigger: TriggerDefinition) => void;
+  updateTrigger: (triggerId: string, updates: Partial<TriggerDefinition>) => void;
+  deleteTrigger: (triggerId: string) => void;
+
   // UI State Actions
   setLoading: (loading: boolean) => void;
   setGenerating: (generating: boolean) => void;
   setError: (error: string | null) => void;
   setUserPrompt: (prompt: string) => void;
+  setSelectedDialect: (dialect: SQLDialect) => void;
 
   // Recompile
   recompile: () => void;
@@ -107,6 +127,7 @@ export const useSchemaStore = create<SchemaStore>()(
       selectedTableId: null,
       selectedRelationshipId: null,
       userPrompt: '',
+      selectedDialect: 'postgresql' as SQLDialect,
 
       // Schema Actions
       setSchema: (schema) => {
@@ -189,6 +210,10 @@ export const useSchemaStore = create<SchemaStore>()(
             relationships: schema.relationships.filter(
               (r) =>
                 r.sourceTable !== table.name && r.targetTable !== table.name
+            ),
+            // Also remove triggers on this table
+            triggers: schema.triggers.filter(
+              (t) => t.tableName !== table.name
             ),
           }))
         );
@@ -440,11 +465,120 @@ export const useSchemaStore = create<SchemaStore>()(
         );
       },
 
+      // Function Actions
+      addFunction: (fn) => {
+        const state = get();
+        set(
+          updateAndRecompile(state, (schema) => ({
+            ...schema,
+            functions: [
+              ...schema.functions,
+              { ...fn, id: fn.id || generateId() },
+            ],
+          }))
+        );
+      },
+
+      updateFunction: (fnId, updates) => {
+        const state = get();
+        set(
+          updateAndRecompile(state, (schema) => ({
+            ...schema,
+            functions: schema.functions.map((f) =>
+              f.id === fnId ? { ...f, ...updates } : f
+            ),
+          }))
+        );
+      },
+
+      deleteFunction: (fnId) => {
+        const state = get();
+        set(
+          updateAndRecompile(state, (schema) => ({
+            ...schema,
+            functions: schema.functions.filter((f) => f.id !== fnId),
+          }))
+        );
+      },
+
+      // View Actions
+      addView: (view) => {
+        const state = get();
+        set(
+          updateAndRecompile(state, (schema) => ({
+            ...schema,
+            views: [
+              ...schema.views,
+              { ...view, id: view.id || generateId() },
+            ],
+          }))
+        );
+      },
+
+      updateView: (viewId, updates) => {
+        const state = get();
+        set(
+          updateAndRecompile(state, (schema) => ({
+            ...schema,
+            views: schema.views.map((v) =>
+              v.id === viewId ? { ...v, ...updates } : v
+            ),
+          }))
+        );
+      },
+
+      deleteView: (viewId) => {
+        const state = get();
+        set(
+          updateAndRecompile(state, (schema) => ({
+            ...schema,
+            views: schema.views.filter((v) => v.id !== viewId),
+          }))
+        );
+      },
+
+      // Trigger Actions
+      addTrigger: (trigger) => {
+        const state = get();
+        set(
+          updateAndRecompile(state, (schema) => ({
+            ...schema,
+            triggers: [
+              ...schema.triggers,
+              { ...trigger, id: trigger.id || generateId() },
+            ],
+          }))
+        );
+      },
+
+      updateTrigger: (triggerId, updates) => {
+        const state = get();
+        set(
+          updateAndRecompile(state, (schema) => ({
+            ...schema,
+            triggers: schema.triggers.map((t) =>
+              t.id === triggerId ? { ...t, ...updates } : t
+            ),
+          }))
+        );
+      },
+
+      deleteTrigger: (triggerId) => {
+        const state = get();
+        set(
+          updateAndRecompile(state, (schema) => ({
+            ...schema,
+            triggers: schema.triggers.filter((t) => t.id !== triggerId),
+          }))
+        );
+      },
+
       // UI State Actions
       setLoading: (isLoading) => set({ isLoading }),
       setGenerating: (isGenerating) => set({ isGenerating }),
       setError: (error) => set({ error }),
       setUserPrompt: (userPrompt) => set({ userPrompt }),
+      setSelectedDialect: (selectedDialect) => set({ selectedDialect }),
 
       // Recompile
       recompile: () => {
@@ -469,6 +603,11 @@ export const useCompiledSQL = () => useSchemaStore((state) => state.compiledSQL)
 export const useCompiledMermaid = () => useSchemaStore((state) => state.compiledMermaid);
 export const useTables = () => useSchemaStore((state) => state.schema?.tables ?? EMPTY_ARRAY);
 export const useRelationships = () => useSchemaStore((state) => state.schema?.relationships ?? EMPTY_ARRAY);
+export const useViews = () => useSchemaStore((state) => state.schema?.views ?? EMPTY_ARRAY);
+export const useTriggers = () => useSchemaStore((state) => state.schema?.triggers ?? EMPTY_ARRAY);
+export const useFunctions = () => useSchemaStore((state) => state.schema?.functions ?? EMPTY_ARRAY);
+export const useStoredProcedures = () => useSchemaStore((state) => state.schema?.storedProcedures ?? EMPTY_ARRAY);
 export const useIsLoading = () => useSchemaStore((state) => state.isLoading);
 export const useIsGenerating = () => useSchemaStore((state) => state.isGenerating);
 export const useError = () => useSchemaStore((state) => state.error);
+export const useSelectedDialect = () => useSchemaStore((state) => state.selectedDialect);

@@ -1,11 +1,17 @@
-from sqlalchemy import Column, String, Integer, Text, Boolean, DateTime, JSON, Numeric, ForeignKey, LargeBinary, create_engine, UniqueConstraint, CheckConstraint
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    Column, String, Integer, Text, Boolean, DateTime, JSON,
+    Numeric, ForeignKey, create_engine, UniqueConstraint, CheckConstraint
+)
+from sqlalchemy.orm import DeclarativeBase, relationship, sessionmaker
+from sqlalchemy.dialects.postgresql import UUID
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    """SQLAlchemy 2.0 declarative base."""
+    pass
+
 
 class Customer(Base):
     """Customers table with relationships to subscriptions and activity logs."""
@@ -14,11 +20,16 @@ class Customer(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     email = Column(Text, unique=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
     subscriptions = relationship("Subscription", back_populates="customer", cascade="all, delete-orphan")
     activity_logs = relationship("ActivityLog", back_populates="customer", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        UniqueConstraint('email', name='UK_Customer_Email'),
+        CheckConstraint("name != ''", name='CHK_Customer_Name_NotEmpty'),
+    )
     
     def __repr__(self):
         return f"<Customer(id={self.id}, name={self.name}, email={self.email})>"
@@ -35,6 +46,10 @@ class Subscription(Base):
     # Relationships
     customer = relationship("Customer", back_populates="subscriptions")
     payments = relationship("Payment", back_populates="subscription", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        UniqueConstraint('customer_id', 'id', name='UK_Customer_Subscription'),
+    )
     
     def __repr__(self):
         return f"<Subscription(id={self.id}, customer_id={self.customer_id}, is_active={self.is_active})>"
@@ -97,13 +112,16 @@ class Audit(Base):
         return f"<Audit(id={self.id}, checksum={self.checksum})>"
 
 
-# Constraint for Customer subscriptions
-Customer.__table_args__ = (
-    UniqueConstraint('email', name='UK_Customer_Email'),
-    CheckConstraint('name != \'\'', name='CHK_Customer_Name_NotEmpty'),
-)
-
-# Foreign key constraint for subscription customer relationship
-Subscription.__table_args__ = (
-    UniqueConstraint('customer_id', 'id', name='UK_Customer_Subscription'),
-)
+class GeneratedSchema(Base):
+    """Stores AI-generated database schemas."""
+    __tablename__ = "generated_schemas"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_email = Column(String, nullable=True) 
+    prompt = Column(Text, nullable=False)
+    dialect = Column(String, nullable=False)
+    schema_data = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    
+    def __repr__(self):
+        return f"<GeneratedSchema(id={self.id}, user_email={self.user_email})>"
