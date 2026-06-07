@@ -1,7 +1,7 @@
 // Schema Intermediate Representation (IR) Types
 // This is the core data structure that the AI generates and the UI manipulates
 
-export type SQLDialect = "mysql" | "postgresql";
+export type SQLDialect = "mysql" | "postgresql" | "sqlite" | "sqlserver";
 
 export type ColumnType =
   | "integer"
@@ -36,6 +36,8 @@ export type OnDeleteAction =
   | "RESTRICT"
   | "NO ACTION";
 
+// ==================== Column & Index Definitions ====================
+
 export interface ColumnDefinition {
   id: string;
   name: string;
@@ -59,6 +61,15 @@ export interface IndexDefinition {
   type?: "btree" | "hash" | "gin" | "gist"; // PostgreSQL specific
 }
 
+export interface CheckConstraintDefinition {
+  id: string;
+  name: string;
+  expression: string; // e.g., "amount > 0"
+  comment?: string;
+}
+
+// ==================== Foreign Key & Table Definitions ====================
+
 export interface ForeignKeyDefinition {
   id: string;
   constraintName: string;
@@ -76,8 +87,11 @@ export interface TableDefinition {
   columns: ColumnDefinition[];
   indexes: IndexDefinition[];
   foreignKeys: ForeignKeyDefinition[];
+  checkConstraints?: CheckConstraintDefinition[];
   comment?: string;
 }
+
+// ==================== Relationship Definition ====================
 
 export interface RelationshipDefinition {
   id: string;
@@ -96,6 +110,8 @@ export interface RelationshipDefinition {
   };
 }
 
+// ==================== Stored Procedure Definition ====================
+
 export interface ProcedureParameter {
   name: string;
   type: ColumnType;
@@ -113,6 +129,54 @@ export interface StoredProcedureDefinition {
   comment?: string;
 }
 
+// ==================== Function Definition ====================
+
+export interface FunctionParameter {
+  name: string;
+  type: ColumnType;
+  defaultValue?: string;
+}
+
+export interface FunctionDefinition {
+  id: string;
+  name: string;
+  parameters: FunctionParameter[];
+  returnType: ColumnType | "void" | "table" | "boolean" | "trigger";
+  body: string; // SQL function body
+  language?: "sql" | "plpgsql" | "plsql" | "tsql";
+  isDeterministic?: boolean; // MySQL optimization hint
+  comment?: string;
+}
+
+// ==================== View Definition ====================
+
+export interface ViewDefinition {
+  id: string;
+  name: string;
+  schema?: string; // For PostgreSQL schemas
+  query: string; // The SELECT statement defining the view
+  isMaterialized?: boolean; // PostgreSQL materialized views
+  columns?: string[]; // Optional explicit column list
+  comment?: string;
+}
+
+// ==================== Trigger Definition ====================
+
+export interface TriggerDefinition {
+  id: string;
+  name: string;
+  tableName: string; // The table the trigger is attached to
+  timing: "BEFORE" | "AFTER" | "INSTEAD OF";
+  event: "INSERT" | "UPDATE" | "DELETE";
+  forEachRow?: boolean;
+  body: string; // Trigger function body or inline SQL
+  functionName?: string; // PostgreSQL: references a function
+  condition?: string; // Optional WHEN condition
+  comment?: string;
+}
+
+// ==================== Full Schema Definition ====================
+
 export interface SchemaDefinition {
   id: string;
   name: string;
@@ -121,11 +185,15 @@ export interface SchemaDefinition {
   tables: TableDefinition[];
   relationships: RelationshipDefinition[];
   storedProcedures: StoredProcedureDefinition[];
+  functions: FunctionDefinition[];
+  views: ViewDefinition[];
+  triggers: TriggerDefinition[];
   createdAt: string;
   updatedAt: string;
 }
 
-// Helper type for UI state
+// ==================== UI State Types ====================
+
 export interface SchemaState {
   schema: SchemaDefinition | null;
   compiledSQL: string;
@@ -136,25 +204,33 @@ export interface SchemaState {
   selectedRelationshipId: string | null;
 }
 
-// API request/response types
+// ==================== API Request/Response Types ====================
+
 export interface GenerateSchemaRequest {
   prompt: string;
   dialect: SQLDialect;
   additionalContext?: string;
+  complexityLevel?: "simple" | "standard" | "enterprise";
+}
+
+export interface RefineSchemaRequest {
+  schema: SchemaDefinition;
+  refinementPrompt: string;
 }
 
 export interface GenerateSchemaResponse {
   schema: SchemaDefinition;
   success: boolean;
   error?: string;
+  warnings?: string[];
 }
 
-// Utility function to generate unique IDs
+// ==================== Utility Functions ====================
+
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Default empty schema
 export function createEmptySchema(
   dialect: SQLDialect = "postgresql",
 ): SchemaDefinition {
@@ -166,6 +242,9 @@ export function createEmptySchema(
     tables: [],
     relationships: [],
     storedProcedures: [],
+    functions: [],
+    views: [],
+    triggers: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

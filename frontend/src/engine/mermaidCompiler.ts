@@ -37,6 +37,15 @@ export class MermaidCompiler {
       lines.push(...this.generateTableDefinition(table));
     });
 
+    // Add view definitions as special entities
+    if (this.schema.views?.length) {
+      lines.push('');
+      lines.push('    %% Views');
+      this.schema.views.forEach(view => {
+        lines.push(...this.generateViewDefinition(view));
+      });
+    }
+
     // Add relationship lines
     this.schema.relationships.forEach(rel => {
       lines.push(this.generateRelationship(rel));
@@ -46,6 +55,13 @@ export class MermaidCompiler {
     this.generateImplicitRelationships().forEach(rel => {
       lines.push(rel);
     });
+
+    // Generate view-to-table relationships
+    if (this.schema.views?.length) {
+      this.generateViewRelationships().forEach(rel => {
+        lines.push(rel);
+      });
+    }
 
     return lines.join('\n');
   }
@@ -58,7 +74,7 @@ export class MermaidCompiler {
     
     // Add columns
     table.columns.forEach(col => {
-      const colLine = this.generateColumnLine(col);
+      const colLine = this.generateColumnLine(col, table);
       lines.push(`        ${colLine}`);
     });
     
@@ -67,7 +83,28 @@ export class MermaidCompiler {
     return lines;
   }
 
-  private generateColumnLine(column: ColumnDefinition): string {
+  private generateViewDefinition(view: import('./types').ViewDefinition): string[] {
+    const lines: string[] = [];
+    const viewName = this.sanitizeName(view.name);
+    
+    // View block — shown with a note indicating it's a view
+    lines.push(`    ${viewName} {`);
+    
+    if (view.columns?.length) {
+      view.columns.forEach(col => {
+        lines.push(`        varchar ${this.sanitizeName(col)} "VIEW"`);
+      });
+    } else {
+      // Parse column names from query if possible (basic approach)
+      lines.push(`        text query "${view.isMaterialized ? 'MATERIALIZED VIEW' : 'VIEW'}"`);
+    }
+    
+    lines.push('    }');
+    
+    return lines;
+  }
+
+  private generateColumnLine(column: ColumnDefinition, table: TableDefinition): string {
     const type = this.mapColumnType(column);
     const name = this.sanitizeName(column.name);
     
@@ -76,8 +113,9 @@ export class MermaidCompiler {
     if (column.isPrimaryKey) markers.push('PK');
     if (column.isUnique && !column.isPrimaryKey) markers.push('UK');
     
-    // Check if this column is a foreign key (will be marked in relationships)
-    // We'll handle FK marking separately
+    // Check if this column is a foreign key
+    const isFk = table.foreignKeys?.some(fk => fk.columnName === column.name);
+    if (isFk) markers.push('FK');
     
     const markerStr = markers.length > 0 ? ` "${markers.join(',')}"` : '';
     
@@ -135,7 +173,7 @@ export class MermaidCompiler {
 
     // Look for foreign keys that don't have explicit relationships
     this.schema.tables.forEach(table => {
-      table.foreignKeys.forEach(fk => {
+      table.foreignKeys?.forEach(fk => {
         const relKey = `${table.name}-${fk.referencedTable}`;
         const reverseKey = `${fk.referencedTable}-${table.name}`;
         
@@ -147,6 +185,28 @@ export class MermaidCompiler {
           
           lines.push(`    ${sourceName} ||--o{ ${targetName} : "${relationName}"`);
           existingRels.add(relKey);
+        }
+      });
+    });
+
+    return lines;
+  }
+
+  private generateViewRelationships(): string[] {
+    const lines: string[] = [];
+    const tableNames = new Set(this.schema.tables.map(t => t.name));
+    
+    this.schema.views?.forEach(view => {
+      // Try to extract table references from the view query
+      const query = view.query.toLowerCase();
+      
+      this.schema.tables.forEach(table => {
+        // Simple heuristic: check if the table name appears in the view query
+        const tableLower = table.name.toLowerCase();
+        if (query.includes(tableLower)) {
+          const viewName = this.sanitizeName(view.name);
+          const tblName = this.sanitizeName(table.name);
+          lines.push(`    ${tblName} ||--o{ ${viewName} : "referenced_by"`);
         }
       });
     });

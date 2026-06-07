@@ -2,11 +2,13 @@ import { Database, Settings, Search, Download, User, LogOut } from 'lucide-react
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { HistoryModal } from '../HistoryModal';
 
 export const Header = () => {
   const { isLoggedIn, logout } = useAuth();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -14,6 +16,7 @@ export const Header = () => {
   };
 
   return (
+    <>
     <header className="bg-[#0f1117] border-b border-surface-700 font-sans">
       <div className="w-full px-4 sm:px-6 lg:px-6">
         <div className="flex h-16 items-center justify-between gap-6">
@@ -46,7 +49,7 @@ export const Header = () => {
             <a href="#" className="text-sm font-medium text-blue-500 border-b-2 border-blue-500 pb-5 pt-5">Explorer</a>
             <a href="#" className="text-sm font-medium text-slate-400 hover:text-slate-200 py-5">Queries</a>
             <a href="#" className="text-sm font-medium text-slate-400 hover:text-slate-200 py-5">Relationships</a>
-            <a href="#" className="text-sm font-medium text-slate-400 hover:text-slate-200 py-5">History</a>
+            <button onClick={() => setShowHistory(true)} className="text-sm font-medium text-slate-400 hover:text-slate-200 py-5 outline-none">History</button>
           </nav>
 
           <div className="hidden lg:block w-px h-6 bg-surface-600 mx-2"></div>
@@ -85,6 +88,9 @@ export const Header = () => {
         </div>
       </div>
     </header>
+    
+    <HistoryModal isOpen={showHistory} onClose={() => setShowHistory(false)} />
+    </>
   );
 };
 

@@ -7,6 +7,14 @@ interface ApiError {
   detail: string;
 }
 
+export interface SavedSchema {
+  id: string;
+  prompt: string;
+  dialect: SQLDialect;
+  schema_data: SchemaDefinition;
+  created_at: string;
+}
+
 class ApiService {
   private baseUrl: string;
 
@@ -20,8 +28,10 @@ class ApiService {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    const userEmail = localStorage.getItem('userEmail');
     const defaultHeaders: HeadersInit = {
       'Content-Type': 'application/json',
+      ...(userEmail ? { 'X-User-Email': userEmail } : {}),
     };
 
     const response = await fetch(url, {
@@ -42,14 +52,15 @@ class ApiService {
     return response.json();
   }
 
-  async healthCheck(): Promise<{ status: string; version: string; ai_provider: string }> {
+  async healthCheck(): Promise<{ status: string; version: string; ai_provider: string; pipeline: string }> {
     return this.request('/api/health');
   }
 
   async generateSchema(
     prompt: string,
     dialect: SQLDialect,
-    additionalContext?: string
+    additionalContext?: string,
+    complexityLevel?: 'simple' | 'standard' | 'enterprise',
   ): Promise<SchemaDefinition> {
     const response = await this.request<GenerateSchemaResponse>('/api/generate-schema', {
       method: 'POST',
@@ -57,11 +68,17 @@ class ApiService {
         prompt,
         dialect,
         additionalContext,
+        complexityLevel: complexityLevel || 'standard',
       }),
     });
 
     if (!response.success) {
       throw new Error(response.error || 'Failed to generate schema');
+    }
+
+    // Log warnings if any
+    if (response.warnings?.length) {
+      console.log('Schema generation warnings:', response.warnings);
     }
 
     return response.schema as SchemaDefinition;
@@ -83,7 +100,19 @@ class ApiService {
       throw new Error(response.error || 'Failed to refine schema');
     }
 
+    if (response.warnings?.length) {
+      console.log('Schema refinement warnings:', response.warnings);
+    }
+
     return response.schema as SchemaDefinition;
+  }
+
+  async getSchemas(): Promise<SavedSchema[]> {
+    return this.request<SavedSchema[]>('/api/schemas');
+  }
+
+  async getSchema(schemaId: string): Promise<SavedSchema> {
+    return this.request<SavedSchema>(`/api/schemas/${schemaId}`);
   }
 }
 

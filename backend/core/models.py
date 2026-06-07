@@ -12,6 +12,8 @@ ColumnType = Literal[
 Cardinality = Literal["one-to-one", "one-to-many", "many-to-many"]
 OnDeleteAction = Literal["CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT", "NO ACTION"]
 
+# ==================== Column & Index Definitions ====================
+
 class ColumnDefinition(BaseModel):
     id: str  
     name: str 
@@ -33,6 +35,14 @@ class IndexDefinition(BaseModel):
     isUnique: bool 
     type: Optional[Literal["btree", "hash", "gin", "gist"]] = None 
 
+class CheckConstraintDefinition(BaseModel):
+    id: str
+    name: str
+    expression: str  # e.g., "amount > 0" or "status IN ('active', 'inactive')"
+    comment: Optional[str] = None
+
+# ==================== Foreign Key & Table Definitions ====================
+
 class ForeignKeyDefinition(BaseModel):
     id: str 
     constraintName: str 
@@ -47,12 +57,15 @@ class TableDefinition(BaseModel):
     name: str 
     schema_name: Optional[str] = Field(None, alias="schema") 
     columns: List[ColumnDefinition] 
-    indexes: List[IndexDefinition] 
-    foreignKeys: List[ForeignKeyDefinition] 
+    indexes: List[IndexDefinition] = []
+    foreignKeys: List[ForeignKeyDefinition] = []
+    checkConstraints: List[CheckConstraintDefinition] = []
     comment: Optional[str] = None 
 
     class Config:
         populate_by_name = True
+
+# ==================== Relationship Definition ====================
 
 class JunctionTable(BaseModel):
     name: str 
@@ -70,6 +83,8 @@ class RelationshipDefinition(BaseModel):
     onDelete: OnDeleteAction 
     junctionTable: Optional[JunctionTable] = None 
 
+# ==================== Stored Procedure Definition ====================
+
 class ProcedureParameter(BaseModel):
     name: str 
     type: ColumnType 
@@ -79,11 +94,58 @@ class ProcedureParameter(BaseModel):
 class StoredProcedureDefinition(BaseModel):
     id: str 
     name: str 
-    parameters: List[ProcedureParameter] 
+    parameters: List[ProcedureParameter] = []
     returnType: Optional[Union[ColumnType, Literal["void", "table"]]] = None
     body: str 
     language: Optional[Literal["sql", "plpgsql", "plsql"]] = None 
     comment: Optional[str] = None 
+
+# ==================== Function Definition ====================
+
+class FunctionParameter(BaseModel):
+    name: str
+    type: ColumnType
+    defaultValue: Optional[str] = None
+
+class FunctionDefinition(BaseModel):
+    id: str
+    name: str
+    parameters: List[FunctionParameter] = []
+    returnType: Union[ColumnType, Literal["void", "table", "boolean", "trigger"]]
+    body: str  # SQL function body
+    language: Optional[Literal["sql", "plpgsql", "plsql", "tsql"]] = None
+    isDeterministic: bool = False  # For MySQL optimization hints
+    comment: Optional[str] = None
+
+# ==================== View Definition ====================
+
+class ViewDefinition(BaseModel):
+    id: str
+    name: str
+    schema_name: Optional[str] = Field(None, alias="schema")
+    query: str  # The SELECT statement that defines the view
+    isMaterialized: bool = False  # PostgreSQL materialized views
+    columns: Optional[List[str]] = None  # Optional explicit column list
+    comment: Optional[str] = None
+
+    class Config:
+        populate_by_name = True
+
+# ==================== Trigger Definition ====================
+
+class TriggerDefinition(BaseModel):
+    id: str
+    name: str
+    tableName: str  # The table the trigger is attached to
+    timing: Literal["BEFORE", "AFTER", "INSTEAD OF"]
+    event: Literal["INSERT", "UPDATE", "DELETE"]  # Single event per trigger for clarity
+    forEachRow: bool = True
+    body: str  # The trigger function body or inline SQL
+    functionName: Optional[str] = None  # PostgreSQL: references a function
+    condition: Optional[str] = None  # Optional WHEN condition
+    comment: Optional[str] = None
+
+# ==================== Full Schema Definition ====================
 
 class SchemaDefinition(BaseModel):
     id: str 
@@ -92,19 +154,33 @@ class SchemaDefinition(BaseModel):
     dialect: SQLDialect 
     tables: List[TableDefinition] 
     relationships: List[RelationshipDefinition] 
-    storedProcedures: List[StoredProcedureDefinition] 
+    storedProcedures: List[StoredProcedureDefinition] = []
+    functions: List[FunctionDefinition] = []
+    views: List[ViewDefinition] = []
+    triggers: List[TriggerDefinition] = []
     createdAt: str 
     updatedAt: str 
+
+# ==================== API Request/Response ====================
 
 class GenerateSchemaRequest(BaseModel):
     prompt: str 
     dialect: SQLDialect 
-    additionalContext: Optional[str] = None 
+    additionalContext: Optional[str] = None
+    complexityLevel: Optional[Literal["simple", "standard", "enterprise"]] = "standard"
+
+class RefineSchemaRequest(BaseModel):
+    schema_data: SchemaDefinition = Field(..., alias="schema")
+    refinementPrompt: str
+
+    class Config:
+        populate_by_name = True
 
 class GenerateSchemaResponse(BaseModel):
     schema_data: Optional[SchemaDefinition] = Field(None, alias="schema") 
     success: bool 
-    error: Optional[str] = None 
+    error: Optional[str] = None
+    warnings: Optional[List[str]] = None  # Validation warnings
 
     class Config:
         populate_by_name = True
